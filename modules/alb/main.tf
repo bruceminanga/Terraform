@@ -2,7 +2,7 @@
 # 1. ALB Security Group (The Front Gate Bouncer)
 # ==============================================================================
 resource "aws_security_group" "alb" {
-  name_prefix = "alb-sg-${var.environment}-"
+  name_prefix = "${var.project_name}-${var.environment}-alb-sg-"
   description = "Security Group for Application Load Balancer"
   vpc_id      = var.vpc_id
 
@@ -11,7 +11,7 @@ resource "aws_security_group" "alb" {
   }
 
   tags = {
-    Name = "${var.environment}-alb-sg"
+    Name = "${var.project_name}-${var.environment}-alb-sg"
   }
 }
 
@@ -35,26 +35,27 @@ resource "aws_vpc_security_group_egress_rule" "to_backends" {
 # 2. The Application Load Balancer (The Reception Desk)
 # ==============================================================================
 resource "aws_lb" "this" {
-  name               = "${var.environment}-app-alb"
+  name               = "${var.project_name}-${var.environment}-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
   subnets            = var.public_subnet_ids
 
   tags = {
-    Name = "${var.environment}-alb"
+    Name = "${var.project_name}-${var.environment}-alb"
   }
 }
 
 # ==============================================================================
-# 3. Target Group (The Pool of Servers Being Monitored)
+# 3. Target Group (The Pool of Servers/Pods Being Monitored)
 # ==============================================================================
 resource "aws_lb_target_group" "app" {
-  name        = "${var.environment}-app-tg"
+  # AWS enforces a 6-character limit on target group name_prefix (e.g. "dev-", "prod-", "stag-")
+  name_prefix = "${substr(var.environment, 0, 4)}-"
   port        = var.app_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
-  target_type = "instance"
+  target_type = var.target_type
 
   health_check {
     enabled             = true
@@ -68,8 +69,12 @@ resource "aws_lb_target_group" "app" {
     unhealthy_threshold = 3
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
-    Name = "${var.environment}-app-tg"
+    Name = "${var.project_name}-${var.environment}-app-tg"
   }
 }
 
@@ -88,10 +93,11 @@ resource "aws_lb_listener" "http" {
 }
 
 # ==============================================================================
-# 5. Target Group Attachment (Registering the EC2 instance)
+# 5. Target Group Attachment (Optional: Registers EC2 ID or EKS/ECS IP)
 # ==============================================================================
 resource "aws_lb_target_group_attachment" "app" {
+  count            = var.target_id != "" ? 1 : 0
   target_group_arn = aws_lb_target_group.app.arn
-  target_id        = var.target_instance_id
+  target_id        = var.target_id
   port             = var.app_port
 }

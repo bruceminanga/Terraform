@@ -120,7 +120,7 @@ resource "aws_eip" "nat" {
 # The NAT Gateway sits in Public Subnet A
 resource "aws_nat_gateway" "this" {
   count         = var.enable_nat_gateway ? 1 : 0
-  allocation_id = aws_eip.nat[0].id              # <--- Fixed [0]
+  allocation_id = aws_eip.nat[0].id # <--- Fixed [0]
   subnet_id     = aws_subnet.public_a.id
 
   tags = {

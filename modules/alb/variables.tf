@@ -1,31 +1,37 @@
+variable "project_name" {
+  type = string
+}
+
 variable "environment" {
-  type        = string
-  description = "Deployment environment (e.g. dev, prod)"
+  type = string
 }
 
 variable "vpc_id" {
-  type        = string
-  description = "VPC ID where the ALB will be deployed"
+  type = string
 }
 
 variable "public_subnet_ids" {
-  type        = list(string)
-  description = "List of at least two public subnet IDs across different AZs"
-}
-
-variable "target_instance_id" {
-  type        = string
-  description = "ID of the EC2 instance to register with the target group"
+  type = list(string)
 }
 
 variable "app_port" {
-  type        = number
-  description = "Port the application container is listening on (e.g., 80 or 8000)"
-  default     = 80
+  type    = number
+  default = 80
+}
+
+variable "target_type" {
+  type        = string
+  description = "'instance' for EC2 or 'ip' for EKS/ECS"
+  default     = "ip"
+}
+
+variable "target_id" {
+  type        = string
+  description = "Optional EC2 instance ID or Pod/Node IP to attach"
+  default     = ""
 }
 
 variable "health_check_path" {
-  type        = string
-  description = "Endpoint path for ALB health checks"
-  default     = "/"
+  type    = string
+  default = "/"
 }
